@@ -1,7 +1,11 @@
 # PA1 - 3D Shapes in WebGL
 
+**Student name:** Islamiya Okassova
 **Student ID:** 242322
 **Course:** AR/VR/XR Applications (AR/VR/XR A AIB), 6B04103 AI Business, 3rd year
+
+## Repository Link
+https://github.com/islamyiaok-cpu/PA1_VScode 
 
 ## Variant
 
@@ -31,11 +35,13 @@
 | D | Toggle depth testing on/off |
 | S | Swap draw order (cube first <-> solid first) |
 
-The on-screen status label shows the student ID, current drawing mode, depth-test state and draw order, and updates on every key press.
-
-## Files
+## Files Submitted
 
 - `index.html` - canvas, status label, script tag
-- `index.js` - all JavaScript and GLSL (shaders, buffers, drawing, controls)
-- `README.md` - this file
-- `writeup.docx` / `writeup.pdf` - E1-E6 answers and development log (screenshots added separately)
+- `index.js` - WebGL 1.0 logic, shaders, buffers and controls
+- `README.md` - Variant info, run instructions, key map
+- `writeup.pdf` - E1-E6 answers, screenshots, and development log 
+
+## Environment 
+
+Tested in Chrome on Windows. 
