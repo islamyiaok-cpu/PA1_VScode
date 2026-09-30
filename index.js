@@ -1,7 +1,6 @@
 // PA1 - 3D Shapes in WebGL
 // Student ID: 242322
 // Variant: last digit 2 -> Wedge (ramp); second-to-last digit 2 -> offset (+0.15, -0.15), bottom+right faces visible
-// Built from the Chapter 2 / Chapter 3 templates only (no matrices, no libraries, no animation loop).
 
 const STUDENT_ID = "242322";
 
@@ -20,15 +19,14 @@ function main() {
   const OX = 0.15;
   const OY = -0.15;
 
-  // Applies the depth-illusion rule from Ch.3:
   // x_draw = x + o_x * (z + 0.5); y_draw = y + o_y * (z + 0.5)
   function offsetVertex(x, y, z) {
     const factor = z + 0.5; // 0 at front (z=-0.5), 1 at back (z=+0.5)
     return [x + OX * factor, y + OY * factor, z];
   }
 
-  // ---- Cube corners (before offset) ----
-  // Front face square: 0.5 x 0.5, centered around x = -0.5 so the whole cube sits in the left half.
+  // Cube corners (before offset)
+  // Front face square: 0.5 x 0.5, centered around x = -0.5 so the whole cube sits in the left half
   const cubeCorners = {
     FBL: offsetVertex(-0.75, -0.25, -0.5),
     FBR: offsetVertex(-0.25, -0.25, -0.5),
@@ -51,11 +49,11 @@ function main() {
     ...flat(cubeCorners.BBR, cubeCorners.BBL, cubeCorners.BTL, cubeCorners.BBR, cubeCorners.BTL, cubeCorners.BTR),
     // left
     ...flat(cubeCorners.FTL, cubeCorners.FBL, cubeCorners.BBL, cubeCorners.FTL, cubeCorners.BBL, cubeCorners.BTL),
-    // right (visible side face, gets the gradient)
+    // right side face, gradient
     ...flat(cubeCorners.FBR, cubeCorners.FTR, cubeCorners.BTR, cubeCorners.FBR, cubeCorners.BTR, cubeCorners.BBR),
     // top
     ...flat(cubeCorners.FTL, cubeCorners.BTL, cubeCorners.BTR, cubeCorners.FTL, cubeCorners.BTR, cubeCorners.FTR),
-    // bottom (visible side face)
+    // bottom (visible side)
     ...flat(cubeCorners.FBL, cubeCorners.BBR, cubeCorners.BBL, cubeCorners.FBL, cubeCorners.FBR, cubeCorners.BBR),
   ];
 
@@ -86,10 +84,7 @@ function main() {
     ...repeat(GRAY, 6), // bottom
   ];
 
-  // ---- Wedge / ramp (assigned solid) ----
-  // Triangular-prism cross-section in the y-z plane (right triangle), extruded along x.
-  // Base on the floor (y = 0), vertical back face, slope rises from the front-bottom edge
-  // to the back-top edge. Placed in the right half of the canvas.
+  // Wedge / Ramp: Triangular prism placed in the right half of the canvas (x > 0)
   const P1 = offsetVertex(0.25, 0, -0.5); // front-bottom-left
   const P2 = offsetVertex(0.75, 0, -0.5); // front-bottom-right
   const P3 = offsetVertex(0.25, 0, 0.5); // back-bottom-left
@@ -102,18 +97,18 @@ function main() {
     ...flat(P1, P2, P4, P1, P4, P3),
     // back, vertical face (P3,P4,P6,P3,P6,P5)
     ...flat(P3, P4, P6, P3, P6, P5),
-    // slope, visible top face -> gradient (P1,P2,P6,P1,P6,P5)
+    // slope, visible top face - radient (P1,P2,P6,P1,P6,P5)
     ...flat(P1, P2, P6, P1, P6, P5),
     // left end triangle (P1,P3,P5)
     ...flat(P1, P3, P5),
-    // right end triangle (P2,P4,P6)
+    // right end (P2,P4,P6)
     ...flat(P2, P4, P6),
   ];
 
   const wedgeColors = [
     ...repeat(GRAY, 6), // bottom
     ...repeat(PURPLE, 6), // back
-    // slope gradient: P1,P2,P6,P1,P6,P5
+    // slope gradient P1,P2,P6,P1,P6,P5
     ...RED, ...GREEN, ...BLUE, ...RED, ...BLUE, ...YELLOW,
     ...repeat(ORANGE, 3), // left end
     ...repeat(CYAN, 3), // right end
@@ -134,9 +129,8 @@ function main() {
 
   const buffers = initBuffers(gl, positions, colors);
 
-  // E6: buffer sizes in bytes, for the write-up. Logged once at startup.
-  // Must (re)bind each buffer before querying it - BUFFER_SIZE reports on whichever
-  // buffer is currently bound to the target, not on a buffer object directly.
+  // E6: buffer sizes in bytes, for the writeup. Logged once at startup.
+  // Must (re)bind each buffer before querying it - BUFFER_SIZE reports on whichever uffer is currently bound to the target, not on a buffer object directly
   gl.bindBuffer(gl.ARRAY_BUFFER, buffers.positionBuffer);
   const positionBufferSize = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
   gl.bindBuffer(gl.ARRAY_BUFFER, buffers.colorBuffer);
