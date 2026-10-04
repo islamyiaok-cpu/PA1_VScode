@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <link rel="icon" href="data:,">
+  <title>PA2 - 242322 - Matrices, Transformations and Perspective</title>
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #000; }
+    canvas { width: 100vw; height: 100vh; display: block; }
+    #status {
+      position: fixed; top: 8px; left: 8px; padding: 6px 10px;
+      font: 13px/1.4 monospace; color: #fff; background: rgba(0,0,0,0.55);
+      white-space: pre; pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div id="status"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"></script>
+  <script src="index.js"></script>
+</body>
+</html>
