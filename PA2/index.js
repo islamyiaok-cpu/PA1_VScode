@@ -1,4 +1,4 @@
-// PA2 - Matrix Transformations and Perspective  [commit 1: setup + static scene]
+// PA2 - Matrix Transformations and Perspective  
 // Student ID: 242322 (Okassova)
 // Variants (read from the right: 2,2,3,2,4,2):
 //   last digit 2          -> Wedge (ramp), same solid as PA1
@@ -148,6 +148,7 @@ function main() {
   gl.clearDepth(1.0);
 
   /*========== State ==========*/
+  const state = { t: 0, paused: false };   // t = simulated time in seconds
   let aspect = 1;
   const projection = mat4.create();
   const view = mat4.create();
@@ -162,22 +163,43 @@ function main() {
     }
     gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
     aspect = canvas.clientWidth / canvas.clientHeight;
-    draw(); // stage 1: static scene, redraw after every resize
   }
+  window.addEventListener("resize", resize);
+  resize();
 
-  /*========== Model matrices (static for now; animation comes in commit 2) ==========*/
-  function cubeModelMatrix() {
-    return mat4.create(); // identity: cube sits at the origin
-  }
-  function solidModelMatrix() {
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "p" || event.key === "P") state.paused = !state.paused;
+  });
+
+  /*========== Model matrices ==========*/
+  // Each glMatrix call RIGHT-multiplies: M = M * X. The last call is applied to the vertex first.
+  function cubeModelMatrix(t) {
     const m = mat4.create();
-    mat4.translate(m, m, [ORBIT_RADIUS, 0, 0]); // fixed place on the orbit
-    mat4.scale(m, m, [0.65, 0.65, 0.65]);
+    mat4.rotate(m, m, CUBE_SPIN * t, vec3.normalize(vec3.create(), CUBE_AXIS));
     return m;
   }
 
-  /*========== Drawing ==========*/
-  function draw() {
+  // M = R_orbit * T * R_self * S   (vertex: scale -> self-spin -> move out to radius -> orbit)
+  function solidModelMatrix(t) {
+    const orbitAngle = (2 * Math.PI * t) / ORBIT_PERIOD;
+    const s = 0.65 + 0.15 * Math.sin((2 * Math.PI * t) / 3);
+    const m = mat4.create();
+    mat4.rotate(m, m, orbitAngle, [0, 1, 0]);          // R_orbit (horizontal orbit, around y)
+    mat4.translate(m, m, [ORBIT_RADIUS, 0, 0]);        // T
+    mat4.rotate(m, m, SOLID_SPIN * t, [0, 1, 0]);      // R_self (own y-axis)
+    mat4.scale(m, m, [s, s, s]);                       // S (pulse)
+    return m;
+  }
+
+  /*========== Drawing (every frame) ==========*/
+  const statusEl = document.querySelector("#status");
+  let then = null;
+  function render(nowMs) {
+    const now = nowMs * 0.001;                          // ms -> s
+    const dt = then === null ? 0 : Math.min(now - then, 0.1); // clamp: no jump after switching tabs
+    then = now;
+    if (!state.paused) state.t += dt;                   // pause freezes t
+
     mat4.lookAt(view, EYE0, TARGET, UP);
     mat4.perspective(projection, (FOV0 * Math.PI) / 180, aspect, NEAR, FAR);
     gl.uniformMatrix4fv(projLoc, false, projection);
@@ -185,17 +207,19 @@ function main() {
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    gl.uniformMatrix4fv(modelLoc, false, cubeModelMatrix());
+    gl.uniformMatrix4fv(modelLoc, false, cubeModelMatrix(state.t));
     gl.drawArrays(gl.TRIANGLES, CUBE_FIRST, CUBE_COUNT);
 
-    gl.uniformMatrix4fv(modelLoc, false, solidModelMatrix());
+    gl.uniformMatrix4fv(modelLoc, false, solidModelMatrix(state.t));
     gl.drawArrays(gl.TRIANGLES, SOLID_FIRST, SOLID_COUNT);
 
-    document.querySelector("#status").textContent = `ID: ${STUDENT_ID}\nProjection: Perspective\nFOV: ${FOV0}\u00B0`;
-  }
+    statusEl.textContent =
+      `ID: ${STUDENT_ID}\nProjection: Perspective\nFOV: ${FOV0}\u00B0\n` +
+      `t: ${state.t.toFixed(1)} s${state.paused ? " (paused)" : ""}`;
 
-  window.addEventListener("resize", resize);
-  resize();
+    requestAnimationFrame(render);
+  }
+  requestAnimationFrame(render);
 }
 
 function createShader(gl, type, source) {
