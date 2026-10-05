@@ -1,4 +1,4 @@
-// PA2 - Matrix Transformations and Perspective  
+// PA2 - Matrix Transformations and Perspective 
 // Student ID: 242322 (Okassova)
 // Variants (read from the right: 2,2,3,2,4,2):
 //   last digit 2          -> Wedge (ramp), same solid as PA1
@@ -148,10 +148,11 @@ function main() {
   gl.clearDepth(1.0);
 
   /*========== State ==========*/
-  const state = { t: 0, paused: false };   // t = simulated time in seconds
+  const state = { t: 0, paused: false, ortho: false, fovDeg: FOV0, azimuth: 0 }; // t in seconds, azimuth in radians
   let aspect = 1;
   const projection = mat4.create();
   const view = mat4.create();
+  const eye = vec3.create();
 
   function resize() {
     const dpr = window.devicePixelRatio || 1;
@@ -167,8 +168,30 @@ function main() {
   window.addEventListener("resize", resize);
   resize();
 
+  function resetCamera() {
+    state.azimuth = 0;
+    state.fovDeg = FOV0;
+    state.ortho = false;
+    state.t = 0;
+  }
+
   document.addEventListener("keydown", (event) => {
-    if (event.key === "p" || event.key === "P") state.paused = !state.paused;
+    switch (event.key) {
+      case "p": case "P":
+        state.paused = !state.paused; break;
+      case "o": case "O":
+        state.ortho = !state.ortho; break;
+      case "+": case "=":   // + needs Shift on most keyboards, so accept = too
+        if (!state.ortho) state.fovDeg = Math.min(100, state.fovDeg + 5); break;
+      case "-": case "_":
+        if (!state.ortho) state.fovDeg = Math.max(20, state.fovDeg - 5); break;
+      case "ArrowLeft":
+        state.azimuth -= (5 * Math.PI) / 180; event.preventDefault(); break;
+      case "ArrowRight":
+        state.azimuth += (5 * Math.PI) / 180; event.preventDefault(); break;
+      case "r": case "R":
+        resetCamera(); break;
+    }
   });
 
   /*========== Model matrices ==========*/
@@ -200,8 +223,20 @@ function main() {
     then = now;
     if (!state.paused) state.t += dt;                   // pause freezes t
 
-    mat4.lookAt(view, EYE0, TARGET, UP);
-    mat4.perspective(projection, (FOV0 * Math.PI) / 180, aspect, NEAR, FAR);
+    // View matrix: the eye orbits around the y-axis by state.azimuth
+    vec3.rotateY(eye, EYE0, TARGET, state.azimuth);
+    mat4.lookAt(view, eye, TARGET, UP);
+
+    // Projection: perspective or orthographic of similar apparent size
+    if (state.ortho) {
+      // half-height = distance * tan(fov0 / 2), so the scene looks about as big as in perspective
+      const dist = vec3.distance(EYE0, TARGET);
+      const halfH = dist * Math.tan((FOV0 * Math.PI) / 360);
+      const halfW = halfH * aspect;
+      mat4.ortho(projection, -halfW, halfW, -halfH, halfH, NEAR, FAR);
+    } else {
+      mat4.perspective(projection, (state.fovDeg * Math.PI) / 180, aspect, NEAR, FAR);
+    }
     gl.uniformMatrix4fv(projLoc, false, projection);
     gl.uniformMatrix4fv(viewLoc, false, view);
 
@@ -214,7 +249,9 @@ function main() {
     gl.drawArrays(gl.TRIANGLES, SOLID_FIRST, SOLID_COUNT);
 
     statusEl.textContent =
-      `ID: ${STUDENT_ID}\nProjection: Perspective\nFOV: ${FOV0}\u00B0\n` +
+      `ID: ${STUDENT_ID}\n` +
+      `Projection: ${state.ortho ? "Orthographic" : "Perspective"}\n` +
+      `FOV: ${state.fovDeg}\u00B0${state.ortho ? " (not used)" : ""}\n` +
       `t: ${state.t.toFixed(1)} s${state.paused ? " (paused)" : ""}`;
 
     requestAnimationFrame(render);
