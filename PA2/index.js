@@ -23,6 +23,7 @@ const FAR = 15.0;   // max distance ~10.2, 15 never clips
 //  ?t=1.7453 freeze time. ?near=6 
 //  ?aspect1=1 hard-code aspect. ?noclamp=1 remove dt clamp
 //  ?logdt=1 for 5 s, then mean/max. ?e2=1 w demo in console
+//  ?wire=1     draw the cube as lines (E3)           ?logorbit=1 log real time per orbit (E5)
 const Q = new URLSearchParams(location.search);
 const DEBUG = {
   t: Q.has("t") ? parseFloat(Q.get("t")) : null,
@@ -31,6 +32,8 @@ const DEBUG = {
   noclamp: Q.has("noclamp"),
   logdt: Q.has("logdt"),
   e2: Q.has("e2"),
+  wire: Q.has("wire"),
+  logorbit: Q.has("logorbit"),
 };
 
 main();
@@ -253,6 +256,8 @@ function main() {
   let dtLogDone = false;
   let dtStart = null;
   let e6Done = false;
+  let orbitCount = 0;
+  let realStart = null;
 
   /*========== Drawing (every frame) ==========*/
   let then = null;
@@ -260,8 +265,17 @@ function main() {
     const now = nowMs * 0.001;
     let dt = then === null ? 0 : now - then;
     if (!DEBUG.noclamp) dt = Math.min(dt, 0.1);
+    if (DEBUG.noclamp && dt > 0.5) console.log("large dt:", dt.toFixed(2), "s");
     then = now;
     if (!state.paused) state.t += dt;
+
+    if (DEBUG.logorbit) {
+      if (realStart === null) realStart = now;
+      while (state.t >= (orbitCount + 1) * ORBIT_PERIOD) {
+        orbitCount++;
+        console.log(`orbit ${orbitCount}: simulated t = ${state.t.toFixed(2)} s, real time = ${(now - realStart).toFixed(2)} s`);
+      }
+    }
 
     if (DEBUG.logdt && !dtLogDone) {
       if (dtStart === null) dtStart = now;
@@ -294,7 +308,12 @@ function main() {
 
     const cubeM = cubeModelMatrix(state.t);
     gl.uniformMatrix4fv(modelLoc, false, cubeM);
-    gl.drawArrays(gl.TRIANGLES, CUBE_FIRST, CUBE_COUNT);
+    if (DEBUG.wire) {
+      // E3 helper: every cube triangle as a line loop, so hidden edges are visible too
+      for (let i = CUBE_FIRST; i < CUBE_FIRST + CUBE_COUNT; i += 3) gl.drawArrays(gl.LINE_LOOP, i, 3);
+    } else {
+      gl.drawArrays(gl.TRIANGLES, CUBE_FIRST, CUBE_COUNT);
+    }
 
     gl.uniformMatrix4fv(modelLoc, false, solidModelMatrix(state.t));
     gl.drawArrays(gl.TRIANGLES, SOLID_FIRST, SOLID_COUNT);
@@ -307,6 +326,7 @@ function main() {
       const pv = mat4.multiply(mat4.create(), projection, view);
       const clip = vec4.transformMat4(vec4.create(), mv, pv);
       console.log("E6 t =", state.t, "angle deg =", (CUBE_SPIN * state.t * 180) / Math.PI);
+      console.log("E6 aspect =", aspect, "(canvas", canvas.clientWidth, "x", canvas.clientHeight, "), fov =", state.fovDeg, "near =", DEBUG.near, "far =", FAR);
       console.log("E6 M*v          =", Array.from(mv));
       console.log("E6 clip P*V*M*v =", Array.from(clip));
       console.log("E6 NDC (clip.xyz / clip.w) =", [clip[0] / clip[3], clip[1] / clip[3], clip[2] / clip[3]]);
